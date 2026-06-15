@@ -1,9 +1,12 @@
-import React, { useEffect, useRef } from "react";
-import { useChatStore } from "../store/useChatStore";
+import { useEffect, useRef } from "react";
+import { useChatStore, getSessionId } from "../store/useChatStore";
 import { MessageBubble } from "./MessageBubble";
 
 export const ChatWindow = () => {
-  const messages = useChatStore((state) => state.messages);
+  const { selectedBackendId, selectedModelId, sessions } = useChatStore();
+  const sId = getSessionId(selectedBackendId, selectedModelId);
+  const activeSession = sessions[sId];
+  const messages = activeSession ? activeSession.messages : [];
   const endOfMessagesRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -20,8 +23,8 @@ export const ChatWindow = () => {
             </svg>
           </div>
           <div className="text-center">
-            <p className="text-lg font-semibold text-slate-700">PG&E Compliance Assistant</p>
-            <p className="text-sm text-slate-500 mt-1">Select a backend from the top right and start asking questions.</p>
+            <p className="text-lg font-semibold text-slate-700">PG&E Assistant</p>
+            <p className="text-sm text-slate-500 mt-1">Send a message to start a session with this configuration.</p>
           </div>
         </div>
       ) : (

@@ -1,6 +1,5 @@
 import { create } from "zustand";
-import { AVAILABLE_MODELS } from "../config/modelsConfig";
-import type { BackendModel } from "../config/modelsConfig";
+import { BACKENDS, GROQ_MODELS } from "../config/modelsConfig";
 
 export interface Message {
   id: string;
@@ -11,36 +10,67 @@ export interface Message {
   timestamp: Date;
 }
 
-interface ChatState {
+export interface ChatSession {
+  id: string;
+  backendId: string;
+  modelId: string;
   messages: Message[];
-  selectedModel: BackendModel;
-  isLoading: boolean;
-  setSelectedModel: (modelId: string) => void;
-  addMessage: (message: Omit<Message, "id" | "timestamp">) => void;
-  setLoading: (loading: boolean) => void;
-  clearChat: () => void;
 }
 
-export const useChatStore = create<ChatState>((set) => ({
-  messages: [],
-  selectedModel: AVAILABLE_MODELS[0],
+interface ChatState {
+  selectedBackendId: string;
+  selectedModelId: string;
+  sessions: Record<string, ChatSession>;
+  isLoading: boolean;
+  setSelectedBackend: (id: string) => void;
+  setSelectedModel: (id: string) => void;
+  addMessage: (message: Omit<Message, "id" | "timestamp">) => void;
+  setLoading: (loading: boolean) => void;
+  clearCurrentChat: () => void;
+}
+
+export const getSessionId = (bId: string, mId: string) => `${bId}::${mId}`;
+
+export const useChatStore = create<ChatState>((set, get) => ({
+  selectedBackendId: BACKENDS[0].id,
+  selectedModelId: GROQ_MODELS[0].id,
+  sessions: {},
   isLoading: false,
-  setSelectedModel: (modelId) =>
-    set((state) => ({
-      selectedModel:
-        AVAILABLE_MODELS.find((m) => m.id === modelId) || state.selectedModel,
-    })),
+
+  setSelectedBackend: (id) => set({ selectedBackendId: id }),
+  setSelectedModel: (id) => set({ selectedModelId: id }),
+
   addMessage: (message) =>
-    set((state) => ({
-      messages: [
-        ...state.messages,
-        {
-          ...message,
-          id: crypto.randomUUID(),
-          timestamp: new Date(),
+    set((state) => {
+      const sId = getSessionId(state.selectedBackendId, state.selectedModelId);
+      const currentSession = state.sessions[sId] || {
+        id: sId,
+        backendId: state.selectedBackendId,
+        modelId: state.selectedModelId,
+        messages: [],
+      };
+
+      return {
+        sessions: {
+          ...state.sessions,
+          [sId]: {
+            ...currentSession,
+            messages: [
+              ...currentSession.messages,
+              { ...message, id: crypto.randomUUID(), timestamp: new Date() },
+            ],
+          },
         },
-      ],
-    })),
+      };
+    }),
+
   setLoading: (loading) => set({ isLoading: loading }),
-  clearChat: () => set({ messages: [] }),
+
+  clearCurrentChat: () =>
+    set((state) => {
+      const sId = getSessionId(state.selectedBackendId, state.selectedModelId);
+      const newSessions = { ...state.sessions };
+      delete newSessions[sId];
+      return { sessions: newSessions };
+    }),
 }));

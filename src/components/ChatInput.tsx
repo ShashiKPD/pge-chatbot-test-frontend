@@ -4,7 +4,7 @@ import { sendChatMessage } from "../services/api";
 
 export const ChatInput = () => {
   const [input, setInput] = useState("");
-  const { addMessage, selectedModel, isLoading, setLoading } = useChatStore();
+  const { addMessage, selectedBackendId, selectedModelId, isLoading, setLoading } = useChatStore();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -16,7 +16,7 @@ export const ChatInput = () => {
     setLoading(true);
 
     try {
-      const response = await sendChatMessage(selectedModel, userText);
+      const response = await sendChatMessage(selectedBackendId, selectedModelId, userText);
       addMessage({
         role: "assistant",
         text: response.response,
@@ -41,7 +41,7 @@ export const ChatInput = () => {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           disabled={isLoading}
-          placeholder="Ask a question about Greenbook compliance or tariffs..."
+          placeholder="Ask a question about PG&E services, compliance or prices..."
           className="flex-1 p-4 pr-24 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600 focus:bg-white disabled:opacity-50 text-slate-900 shadow-sm transition-all"
         />
         <button
