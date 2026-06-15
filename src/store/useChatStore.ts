@@ -31,7 +31,7 @@ interface ChatState {
 
 export const getSessionId = (bId: string, mId: string) => `${bId}::${mId}`;
 
-export const useChatStore = create<ChatState>((set, get) => ({
+export const useChatStore = create<ChatState>((set, _get) => ({
   selectedBackendId: BACKENDS[0].id,
   selectedModelId: GROQ_MODELS[0].id,
   sessions: {},

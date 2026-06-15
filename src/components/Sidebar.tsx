@@ -1,4 +1,3 @@
-import React from "react";
 import { useChatStore, getSessionId } from "../store/useChatStore";
 import { BACKENDS, GROQ_MODELS } from "../config/modelsConfig";
 
