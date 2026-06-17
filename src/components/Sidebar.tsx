@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useChatStore } from "../store/useChatStore";
 import { BACKENDS, GROQ_MODELS } from "../config/modelsConfig";
 
@@ -127,9 +127,21 @@ export const Sidebar = () => {
                           }`}
                         >
                           <div className="flex flex-col overflow-hidden pr-6 w-full">
-                            <span className={`text-sm truncate ${isActive ? "text-blue-800 font-medium" : "text-slate-700"}`}>
-                              {session.title}
-                            </span>
+                            <div className="flex items-center gap-2">
+                              <span className={`text-sm truncate ${isActive ? "text-blue-800 font-medium" : "text-slate-700"}`}>
+                                {session.title}
+                              </span>
+                              {/* NEW: Score Badge */}
+                              {session.score && (
+                                <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold shrink-0 ${
+                                  session.score >= 8 ? "bg-green-100 text-green-700" : 
+                                  session.score >= 5 ? "bg-yellow-100 text-yellow-700" : 
+                                  "bg-red-100 text-red-700"
+                                }`}>
+                                  {session.score}/10
+                                </span>
+                              )}
+                            </div>
                           </div>
                           
                           <button

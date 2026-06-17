@@ -8,7 +8,7 @@ export interface Message {
   text: string;
   sources?: string[];
   images?: string[];
-  timestamp: Date;
+  timestamp: number;
 }
 
 export interface ChatSession {
@@ -18,6 +18,8 @@ export interface ChatSession {
   modelId: string;
   messages: Message[];
   createdAt: number;
+  score?: number; // NEW
+  comment?: string; // NEW
 }
 
 interface ChatState {
@@ -30,6 +32,7 @@ interface ChatState {
   updateActiveConfig: (backendId: string, modelId: string) => void;
   addMessage: (message: Omit<Message, "id" | "timestamp">) => void;
   setLoading: (loading: boolean) => void;
+  updateEvaluation: (id: string, score?: number, comment?: string) => void; // NEW
 }
 
 const generateTitle = (text: string) => {
@@ -136,7 +139,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
             title: newTitle,
             messages: [
               ...session.messages,
-              { ...message, id: crypto.randomUUID(), timestamp: new Date() },
+              { ...message, id: crypto.randomUUID(), timestamp: Date.now() },
             ],
           },
         },
@@ -144,4 +147,20 @@ export const useChatStore = create<ChatState>((set, get) => ({
     }),
 
   setLoading: (loading) => set({ isLoading: loading }),
+
+  // NEW ACTION
+  updateEvaluation: (id, score, comment) =>
+    set((state) => {
+      if (!state.sessions[id]) return state;
+      return {
+        sessions: {
+          ...state.sessions,
+          [id]: {
+            ...state.sessions[id],
+            ...(score !== undefined && { score }),
+            ...(comment !== undefined && { comment }),
+          },
+        },
+      };
+    }),
 }));
