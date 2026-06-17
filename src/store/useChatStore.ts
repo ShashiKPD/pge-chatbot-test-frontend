@@ -1,6 +1,6 @@
-// src/store/useChatStore.ts
 import { create } from "zustand";
 import { BACKENDS, GROQ_MODELS } from "../config/modelsConfig";
+import { db } from "../services/db";
 
 export interface Message {
   id: string;
@@ -11,28 +11,33 @@ export interface Message {
   timestamp: number;
 }
 
-export interface ChatSession {
+export interface Chat {
   id: string;
   title: string;
   backendId: string;
   modelId: string;
   messages: Message[];
   createdAt: number;
-  score?: number; // NEW
-  comment?: string; // NEW
+  score?: number;
+  evalNote?: string;
 }
 
 interface ChatState {
-  sessions: Record<string, ChatSession>;
-  activeSessionId: string | null;
+  offlineChats: Record<string, Chat>;
+  onlineChats: Record<string, Chat>;
+  activeOfflineChatId: string | null;
+  activeOnlineChatId: string | null;
   isLoading: boolean;
-  createSession: (backendId?: string, modelId?: string) => void;
-  setActiveSession: (id: string) => void;
-  deleteSession: (id: string) => void;
+  isOnline: boolean;
+  initializeStore: () => Promise<void>;
+  setOnlineMode: (online: boolean) => Promise<void>;
+  createChat: (backendId?: string, modelId?: string) => void;
+  setActiveChat: (id: string) => void;
+  deleteChat: (id: string) => void;
   updateActiveConfig: (backendId: string, modelId: string) => void;
   addMessage: (message: Omit<Message, "id" | "timestamp">) => void;
   setLoading: (loading: boolean) => void;
-  updateEvaluation: (id: string, score?: number, comment?: string) => void; // NEW
+  updateEvaluation: (id: string, score?: number, evalNote?: string) => void;
 }
 
 const generateTitle = (text: string) => {
@@ -40,127 +45,259 @@ const generateTitle = (text: string) => {
 };
 
 export const useChatStore = create<ChatState>((set, get) => ({
-  sessions: {},
-  activeSessionId: null,
+  offlineChats: {},
+  onlineChats: {},
+  activeOfflineChatId: null,
+  activeOnlineChatId: null,
   isLoading: false,
+  isOnline: false,
 
-  createSession: (bId, mId) => {
+  initializeStore: async () => {
+    const savedMode = localStorage.getItem("isOnlineMode") === "true";
+    if (savedMode) {
+      await get().setOnlineMode(true);
+    } else {
+      // Bootstrapping the offline mode if user starts offline
+      const state = get();
+      const offlineIds = Object.keys(state.offlineChats).sort(
+        (a, b) =>
+          state.offlineChats[b].createdAt - state.offlineChats[a].createdAt,
+      );
+      if (offlineIds.length > 0) {
+        set({ activeOfflineChatId: offlineIds[0] });
+      } else {
+        get().createChat();
+      }
+    }
+  },
+
+  setOnlineMode: async (online) => {
+    set({ isOnline: online, isLoading: true });
+    localStorage.setItem("isOnlineMode", String(online));
+
+    if (online) {
+      try {
+        const remoteChats = await db.fetchChats();
+        // Auto-select the most recent chat from the DB
+        const chatIds = Object.keys(remoteChats).sort(
+          (a, b) => remoteChats[b].createdAt - remoteChats[a].createdAt,
+        );
+        const activeId = chatIds.length > 0 ? chatIds[0] : null;
+
+        set({
+          onlineChats: remoteChats,
+          activeOnlineChatId: activeId,
+          isLoading: false,
+        });
+
+        // Only create a new chat if the DB was completely empty
+        if (!activeId) {
+          get().createChat();
+        }
+      } catch (error) {
+        set({ isOnline: false, isLoading: false });
+        localStorage.setItem("isOnlineMode", "false");
+      }
+    } else {
+      set({ isLoading: false });
+      // When toggling to offline, ensure we select or create a chat
+      const offlineIds = Object.keys(get().offlineChats).sort(
+        (a, b) =>
+          get().offlineChats[b].createdAt - get().offlineChats[a].createdAt,
+      );
+      if (offlineIds.length > 0) {
+        set({ activeOfflineChatId: offlineIds[0] });
+      } else {
+        get().createChat();
+      }
+    }
+  },
+
+  createChat: (bId, mId) => {
+    const state = get();
     const backendId = bId || BACKENDS[0].id;
     const modelId = mId || GROQ_MODELS[0].id;
     const newId = crypto.randomUUID();
 
-    set((state) => ({
-      sessions: {
-        ...state.sessions,
-        [newId]: {
-          id: newId,
-          title: "New Session",
-          backendId,
-          modelId,
-          messages: [],
-          createdAt: Date.now(),
-        },
-      },
-      activeSessionId: newId,
-    }));
+    const newChat: Chat = {
+      id: newId,
+      title: "New Chat",
+      backendId,
+      modelId,
+      messages: [],
+      createdAt: Date.now(),
+    };
+
+    if (state.isOnline) {
+      set({
+        onlineChats: { ...state.onlineChats, [newId]: newChat },
+        activeOnlineChatId: newId,
+      });
+      // REMOVED: db.saveChat(newChat).
+      // We do not save to DB until the user actually adds a message or evaluation.
+    } else {
+      set({
+        offlineChats: { ...state.offlineChats, [newId]: newChat },
+        activeOfflineChatId: newId,
+      });
+    }
   },
 
-  setActiveSession: (id) => set({ activeSessionId: id }),
+  setActiveChat: (id) => {
+    if (get().isOnline) {
+      set({ activeOnlineChatId: id });
+    } else {
+      set({ activeOfflineChatId: id });
+    }
+  },
 
-  deleteSession: (id) =>
-    set((state) => {
-      const newSessions = { ...state.sessions };
-      delete newSessions[id];
+  deleteChat: (id) => {
+    const state = get();
+    const isOnline = state.isOnline;
+    const currentChats = isOnline ? state.onlineChats : state.offlineChats;
+    const currentActiveId = isOnline
+      ? state.activeOnlineChatId
+      : state.activeOfflineChatId;
 
-      let newActiveId = state.activeSessionId;
-      if (state.activeSessionId === id) {
-        const remainingIds = Object.keys(newSessions).sort(
-          (a, b) => newSessions[b].createdAt - newSessions[a].createdAt,
-        );
-        newActiveId = remainingIds.length > 0 ? remainingIds[0] : null;
+    const chatToDelete = currentChats[id];
+    if (!chatToDelete) return;
+
+    const newChats = { ...currentChats };
+    delete newChats[id];
+
+    let newActiveId = currentActiveId;
+    if (currentActiveId === id) {
+      const remainingIds = Object.keys(newChats).sort(
+        (a, b) => newChats[b].createdAt - newChats[a].createdAt,
+      );
+      newActiveId = remainingIds.length > 0 ? remainingIds[0] : null;
+    }
+
+    if (isOnline) {
+      set({ onlineChats: newChats, activeOnlineChatId: newActiveId });
+      const wasSaved =
+        chatToDelete.messages.length > 0 ||
+        chatToDelete.score !== undefined ||
+        chatToDelete.evalNote !== undefined;
+      if (wasSaved) db.deleteChat(id);
+    } else {
+      set({ offlineChats: newChats, activeOfflineChatId: newActiveId });
+    }
+
+    // If the user deleted the absolute last chat, spawn a fresh empty one
+    if (!newActiveId) {
+      get().createChat();
+    }
+  },
+
+  updateActiveConfig: (backendId, modelId) => {
+    const state = get();
+    const isOnline = state.isOnline;
+    const currentChats = isOnline ? state.onlineChats : state.offlineChats;
+    const activeChatId = isOnline
+      ? state.activeOnlineChatId
+      : state.activeOfflineChatId;
+
+    if (!activeChatId) return;
+
+    const activeChat = currentChats[activeChatId];
+
+    // Check if the chat is completely untouched
+    const isUntouched =
+      activeChat.messages.length === 0 &&
+      activeChat.score === undefined &&
+      activeChat.evalNote === undefined;
+
+    if (isUntouched) {
+      const updatedChat = { ...activeChat, backendId, modelId };
+      if (isOnline) {
+        set({ onlineChats: { ...currentChats, [activeChatId]: updatedChat } });
+        // REMOVED: db.saveChat. Still empty, so keep it purely local.
+      } else {
+        set({ offlineChats: { ...currentChats, [activeChatId]: updatedChat } });
       }
+      return;
+    }
 
-      return {
-        sessions: newSessions,
-        activeSessionId: newActiveId,
-      };
-    }),
+    // If it has content, create a fresh empty chat to preserve the old chat's history
+    const newId = crypto.randomUUID();
+    const newChat: Chat = {
+      id: newId,
+      title: "New Chat",
+      backendId,
+      modelId,
+      messages: [],
+      createdAt: Date.now(),
+    };
 
-  updateActiveConfig: (backendId, modelId) =>
-    set((state) => {
-      const { activeSessionId, sessions } = state;
-      if (!activeSessionId) return state;
+    if (isOnline) {
+      set({
+        onlineChats: { ...currentChats, [newId]: newChat },
+        activeOnlineChatId: newId,
+      });
+      // REMOVED: db.saveChat. New branch is empty, keep it local.
+    } else {
+      set({
+        offlineChats: { ...currentChats, [newId]: newChat },
+        activeOfflineChatId: newId,
+      });
+    }
+  },
 
-      const activeSession = sessions[activeSessionId];
+  addMessage: (message) => {
+    const state = get();
+    const isOnline = state.isOnline;
+    const currentChats = isOnline ? state.onlineChats : state.offlineChats;
+    const activeChatId = isOnline
+      ? state.activeOnlineChatId
+      : state.activeOfflineChatId;
 
-      if (activeSession.messages.length === 0) {
-        return {
-          sessions: {
-            ...sessions,
-            [activeSessionId]: { ...activeSession, backendId, modelId },
-          },
-        };
-      }
+    if (!activeChatId) return;
 
-      const newId = crypto.randomUUID();
-      return {
-        sessions: {
-          ...sessions,
-          [newId]: {
-            id: newId,
-            title: "New Session",
-            backendId,
-            modelId,
-            messages: [],
-            createdAt: Date.now(),
-          },
-        },
-        activeSessionId: newId,
-      };
-    }),
+    const chat = currentChats[activeChatId];
+    const isFirstUserMessage =
+      chat.messages.length === 0 && message.role === "user";
+    const newTitle = isFirstUserMessage
+      ? generateTitle(message.text)
+      : chat.title;
 
-  addMessage: (message) =>
-    set((state) => {
-      const { activeSessionId, sessions } = state;
-      if (!activeSessionId) return state;
+    const updatedChat = {
+      ...chat,
+      title: newTitle,
+      messages: [
+        ...chat.messages,
+        { ...message, id: crypto.randomUUID(), timestamp: Date.now() },
+      ],
+    };
 
-      const session = sessions[activeSessionId];
-      const isFirstUserMessage =
-        session.messages.length === 0 && message.role === "user";
-      const newTitle = isFirstUserMessage
-        ? generateTitle(message.text)
-        : session.title;
-
-      return {
-        sessions: {
-          ...sessions,
-          [activeSessionId]: {
-            ...session,
-            title: newTitle,
-            messages: [
-              ...session.messages,
-              { ...message, id: crypto.randomUUID(), timestamp: Date.now() },
-            ],
-          },
-        },
-      };
-    }),
+    if (isOnline) {
+      set({ onlineChats: { ...currentChats, [activeChatId]: updatedChat } });
+      db.saveChat(updatedChat); // Chat now has content, sync to DB
+    } else {
+      set({ offlineChats: { ...currentChats, [activeChatId]: updatedChat } });
+    }
+  },
 
   setLoading: (loading) => set({ isLoading: loading }),
 
-  // NEW ACTION
-  updateEvaluation: (id, score, comment) =>
-    set((state) => {
-      if (!state.sessions[id]) return state;
-      return {
-        sessions: {
-          ...state.sessions,
-          [id]: {
-            ...state.sessions[id],
-            ...(score !== undefined && { score }),
-            ...(comment !== undefined && { comment }),
-          },
-        },
-      };
-    }),
+  updateEvaluation: (id, score, evalNote) => {
+    const state = get();
+    const isOnline = state.isOnline;
+    const currentChats = isOnline ? state.onlineChats : state.offlineChats;
+
+    if (!currentChats[id]) return;
+
+    const updatedChat = {
+      ...currentChats[id],
+      ...(score !== undefined && { score }),
+      ...(evalNote !== undefined && { evalNote }),
+    };
+
+    if (isOnline) {
+      set({ onlineChats: { ...currentChats, [id]: updatedChat } });
+      db.saveChat(updatedChat); // Chat now has evaluation data, sync to DB
+    } else {
+      set({ offlineChats: { ...currentChats, [id]: updatedChat } });
+    }
+  },
 }));

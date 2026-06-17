@@ -1,17 +1,18 @@
-// src/components/ChatInput.tsx
-import React, { useState } from "react";
+import { useState } from "react";
 import { useChatStore } from "../store/useChatStore";
 import { sendChatMessage } from "../services/api";
 
 export const ChatInput = () => {
   const [input, setInput] = useState("");
-  const { addMessage, sessions, activeSessionId, isLoading, setLoading } = useChatStore();
+  const { addMessage, offlineChats, onlineChats, activeOfflineChatId, activeOnlineChatId, isOnline, isLoading, setLoading } = useChatStore();
 
-  const activeSession = activeSessionId ? sessions[activeSessionId] : null;
+  const currentChats = isOnline ? onlineChats : offlineChats;
+  const activeChatId = isOnline ? activeOnlineChatId : activeOfflineChatId;
+  const activeChat = activeChatId ? currentChats[activeChatId] : null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim() || isLoading || !activeSession) return;
+    if (!input.trim() || isLoading || !activeChat) return;
 
     const userText = input.trim();
     setInput("");
@@ -20,8 +21,8 @@ export const ChatInput = () => {
 
     try {
       const response = await sendChatMessage(
-        activeSession.backendId,
-        activeSession.modelId,
+        activeChat.backendId,
+        activeChat.modelId,
         userText
       );
       addMessage({
@@ -47,13 +48,13 @@ export const ChatInput = () => {
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          disabled={isLoading || !activeSession}
+          disabled={isLoading || !activeChat}
           placeholder="Ask a question about Greenbook compliance or tariffs..."
           className="flex-1 p-4 pr-24 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600 focus:bg-white disabled:opacity-50 text-slate-900 shadow-sm transition-all"
         />
         <button
           type="submit"
-          disabled={isLoading || !input.trim() || !activeSession}
+          disabled={isLoading || !input.trim() || !activeChat}
           className="absolute right-2 top-2 bottom-2 px-6 bg-blue-700 text-white font-medium rounded-lg hover:bg-blue-800 disabled:opacity-50 transition-colors shadow-sm"
         >
           {isLoading ? "..." : "Send"}

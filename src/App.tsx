@@ -1,9 +1,17 @@
+import { useEffect } from "react";
 import { Sidebar } from "./components/Sidebar";
 import { Header } from "./components/Header";
 import { ChatWindow } from "./components/ChatWindow";
 import { ChatInput } from "./components/ChatInput";
+import { useChatStore } from "./store/useChatStore";
 
 function App() {
+  const initializeStore = useChatStore((state) => state.initializeStore);
+
+  useEffect(() => {
+    initializeStore();
+  }, [initializeStore]);
+
   return (
     <div className="flex h-screen bg-slate-50 font-sans text-slate-900">
       <Sidebar />
