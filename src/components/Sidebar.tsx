@@ -52,8 +52,8 @@ export const Sidebar = () => {
     <div className="w-72 bg-white border-r border-slate-200 flex flex-col h-full shadow-sm z-20 shrink-0 select-none">
       <div className="px-5 py-4 border-b border-slate-200 flex flex-col gap-4 bg-slate-50">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-blue-700 rounded-md flex items-center justify-center text-white font-bold text-sm shadow-sm">
-            PG
+          <div className="w-12 h-8 bg-blue-700 rounded-md flex items-center justify-center text-white font-bold text-sm shadow-sm">
+            PG&E
           </div>
           <h1 className="text-sm font-semibold text-slate-800 tracking-tight">Evaluations</h1>
         </div>

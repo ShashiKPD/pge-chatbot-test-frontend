@@ -49,7 +49,7 @@ export const ChatInput = () => {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           disabled={isLoading || !activeChat}
-          placeholder="Ask a question about Greenbook compliance or tariffs..."
+          placeholder="Ask a question about PG&E services, compliance, or billing..."
           className="flex-1 p-4 pr-24 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600 focus:bg-white disabled:opacity-50 text-slate-900 shadow-sm transition-all"
         />
         <button

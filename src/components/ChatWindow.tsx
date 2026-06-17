@@ -29,7 +29,15 @@ const EvaluationPanel = ({ chatId, currentScore, currentEvalNote }: { chatId: st
         isExpanded ? "left-6" : ""
       }`}
     >
-      <div className={`flex-1 flex items-center h-full overflow-hidden transition-all duration-300 ${isExpanded ? "px-4 opacity-100" : "w-0 opacity-0 px-0"}`}>
+      <div className={`flex-1 flex items-center h-full overflow-hidden transition-all duration-300 ${isExpanded ? "px-2 opacity-100 gap-4" : "w-0 opacity-0 px-0"}`}>
+        <input
+          type="text"
+          value={evalNote}
+          onChange={(e) => setEvalNote(e.target.value)}
+          onBlur={handleEvalNoteBlur}
+          placeholder="Testing notes or edge cases..."
+          className="flex-1 min-w-[100px] h-6 px-2 text-[11px] border border-slate-200 rounded bg-slate-50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 text-slate-800"
+        />
         <div className="flex gap-0.5 shrink-0 mr-4">
           {scores.map(num => (
             <button
@@ -45,21 +53,13 @@ const EvaluationPanel = ({ chatId, currentScore, currentEvalNote }: { chatId: st
             </button>
           ))}
         </div>
-        <input
-          type="text"
-          value={evalNote}
-          onChange={(e) => setEvalNote(e.target.value)}
-          onBlur={handleEvalNoteBlur}
-          placeholder="Testing notes or edge cases..."
-          className="flex-1 min-w-[100px] h-6 px-2 text-[11px] border border-slate-200 rounded bg-slate-50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 text-slate-800"
-        />
       </div>
 
       <button
         onClick={() => setIsExpanded(!isExpanded)}
         className={`flex items-center justify-center h-full px-3 gap-2 hover:bg-slate-50 transition-colors shrink-0 rounded-r-lg ${isExpanded ? "border-l border-slate-200 bg-slate-50/50" : "rounded-l-lg"}`}
       >
-        <span className="text-[11px] font-semibold text-slate-600">Response Score</span>
+        <span className="text-[11px] font-semibold text-slate-600">Score</span>
         {currentScore && (
           <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
             currentScore >= 8 ? "bg-green-100 text-green-700" :
@@ -121,7 +121,7 @@ export const ChatWindow = () => {
               </svg>
             </div>
             <div className="text-center">
-              <p className="text-lg font-semibold text-slate-700">Test Chat Ready</p>
+              <p className="text-lg font-semibold text-slate-700">Test ChatBot</p>
               <p className="text-sm text-slate-500 mt-1">Send a prompt to evaluate the selected backend and model.</p>
             </div>
           </div>
