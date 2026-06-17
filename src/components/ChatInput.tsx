@@ -1,14 +1,17 @@
+// src/components/ChatInput.tsx
 import React, { useState } from "react";
 import { useChatStore } from "../store/useChatStore";
 import { sendChatMessage } from "../services/api";
 
 export const ChatInput = () => {
   const [input, setInput] = useState("");
-  const { addMessage, selectedBackendId, selectedModelId, isLoading, setLoading } = useChatStore();
+  const { addMessage, sessions, activeSessionId, isLoading, setLoading } = useChatStore();
+
+  const activeSession = activeSessionId ? sessions[activeSessionId] : null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim() || isLoading) return;
+    if (!input.trim() || isLoading || !activeSession) return;
 
     const userText = input.trim();
     setInput("");
@@ -16,7 +19,11 @@ export const ChatInput = () => {
     setLoading(true);
 
     try {
-      const response = await sendChatMessage(selectedBackendId, selectedModelId, userText);
+      const response = await sendChatMessage(
+        activeSession.backendId,
+        activeSession.modelId,
+        userText
+      );
       addMessage({
         role: "assistant",
         text: response.response,
@@ -40,13 +47,13 @@ export const ChatInput = () => {
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          disabled={isLoading}
-          placeholder="Ask a question about PG&E services, compliance or prices..."
+          disabled={isLoading || !activeSession}
+          placeholder="Ask a question about Greenbook compliance or tariffs..."
           className="flex-1 p-4 pr-24 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600 focus:bg-white disabled:opacity-50 text-slate-900 shadow-sm transition-all"
         />
         <button
           type="submit"
-          disabled={isLoading || !input.trim()}
+          disabled={isLoading || !input.trim() || !activeSession}
           className="absolute right-2 top-2 bottom-2 px-6 bg-blue-700 text-white font-medium rounded-lg hover:bg-blue-800 disabled:opacity-50 transition-colors shadow-sm"
         >
           {isLoading ? "..." : "Send"}
