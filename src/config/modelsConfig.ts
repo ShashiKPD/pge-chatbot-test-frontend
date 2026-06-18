@@ -7,26 +7,27 @@ export interface BackendService {
 
 export const BACKENDS: BackendService[] = [
   {
-    id: "pritam-pageindex-rag",
-    name: "Pritam PageIndex (RAG)",
-    endpoint: "/v1/chat/pritam",
+    id: "pritam-graph-rag",
+    name: "Pritam Graph",
+    endpoint: "https://pge-spd-dev-neo4j-graph-db.hf.space/search",
+    // endpoint: "https://neo4j-graph-db.hf.space/search",
     provider: "Pritam Prabhu",
   },
   {
     id: "tejaswari-graph-rag",
-    name: "Tejaswari Graph (RAG)",
+    name: "Tejaswari Graph",
     endpoint: "/v2/chat/tejaswari",
     provider: "Madiya Tejaswari",
   },
   {
     id: "atisha-hybrid-rag",
-    name: "Atisha Hybrid (RAG)",
-    endpoint: "/v2/chat/atisha",
+    name: "Atisha Hybrid",
+    endpoint: "https://pge-spd-dev-hybridrag.hf.space/query",
     provider: "Atisha Bhattachatyya",
   },
   {
     id: "suvam-vector-rag",
-    name: "Suvam Vector (RAG)",
+    name: "Suvam Vector",
     endpoint: "/v2/chat/suvam",
     provider: "Suvam Sharma",
   },
@@ -38,8 +39,9 @@ export interface LlmModel {
 }
 
 export const GROQ_MODELS: LlmModel[] = [
-  { id: "llama3-8b-8192", name: "Llama 3 (8B)" },
-  { id: "llama3-70b-8192", name: "Llama 3 (70B)" },
-  { id: "mixtral-8x7b-32768", name: "Mixtral 8x7B" },
-  { id: "gemma-7b-it", name: "Gemma 7B" },
+  { id: "llama-3.3-70b-versatile", name: "Llama 3.3 70B Versatile" },
+  { id: "meta-llama/llama-4-scout-17b-16e-instruct", name: "Llama 4 Scout" },
+  { id: "qwen/qwen3-32b", name: "Qwen 3 32B" },
+  // { id: "moonshotai/kimi-k2-instruct", name: "Kimi K2" },
+  { id: "openai/gpt-oss-120b", name: "GPT-OSS 120B" },
 ];

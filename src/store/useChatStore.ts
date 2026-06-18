@@ -8,6 +8,7 @@ export interface Message {
   text: string;
   sources?: string[];
   images?: string[];
+  metadata?: Record<string, any>;
   timestamp: number;
 }
 
@@ -57,7 +58,6 @@ export const useChatStore = create<ChatState>((set, get) => ({
     if (savedMode) {
       await get().setOnlineMode(true);
     } else {
-      // Bootstrapping the offline mode if user starts offline
       const state = get();
       const offlineIds = Object.keys(state.offlineChats).sort(
         (a, b) =>
@@ -78,7 +78,6 @@ export const useChatStore = create<ChatState>((set, get) => ({
     if (online) {
       try {
         const remoteChats = await db.fetchChats();
-        // Auto-select the most recent chat from the DB
         const chatIds = Object.keys(remoteChats).sort(
           (a, b) => remoteChats[b].createdAt - remoteChats[a].createdAt,
         );
@@ -90,7 +89,6 @@ export const useChatStore = create<ChatState>((set, get) => ({
           isLoading: false,
         });
 
-        // Only create a new chat if the DB was completely empty
         if (!activeId) {
           get().createChat();
         }
@@ -100,7 +98,6 @@ export const useChatStore = create<ChatState>((set, get) => ({
       }
     } else {
       set({ isLoading: false });
-      // When toggling to offline, ensure we select or create a chat
       const offlineIds = Object.keys(get().offlineChats).sort(
         (a, b) =>
           get().offlineChats[b].createdAt - get().offlineChats[a].createdAt,
@@ -133,8 +130,6 @@ export const useChatStore = create<ChatState>((set, get) => ({
         onlineChats: { ...state.onlineChats, [newId]: newChat },
         activeOnlineChatId: newId,
       });
-      // REMOVED: db.saveChat(newChat).
-      // We do not save to DB until the user actually adds a message or evaluation.
     } else {
       set({
         offlineChats: { ...state.offlineChats, [newId]: newChat },
@@ -184,7 +179,6 @@ export const useChatStore = create<ChatState>((set, get) => ({
       set({ offlineChats: newChats, activeOfflineChatId: newActiveId });
     }
 
-    // If the user deleted the absolute last chat, spawn a fresh empty one
     if (!newActiveId) {
       get().createChat();
     }
@@ -202,7 +196,6 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
     const activeChat = currentChats[activeChatId];
 
-    // Check if the chat is completely untouched
     const isUntouched =
       activeChat.messages.length === 0 &&
       activeChat.score === undefined &&
@@ -212,14 +205,12 @@ export const useChatStore = create<ChatState>((set, get) => ({
       const updatedChat = { ...activeChat, backendId, modelId };
       if (isOnline) {
         set({ onlineChats: { ...currentChats, [activeChatId]: updatedChat } });
-        // REMOVED: db.saveChat. Still empty, so keep it purely local.
       } else {
         set({ offlineChats: { ...currentChats, [activeChatId]: updatedChat } });
       }
       return;
     }
 
-    // If it has content, create a fresh empty chat to preserve the old chat's history
     const newId = crypto.randomUUID();
     const newChat: Chat = {
       id: newId,
@@ -235,7 +226,6 @@ export const useChatStore = create<ChatState>((set, get) => ({
         onlineChats: { ...currentChats, [newId]: newChat },
         activeOnlineChatId: newId,
       });
-      // REMOVED: db.saveChat. New branch is empty, keep it local.
     } else {
       set({
         offlineChats: { ...currentChats, [newId]: newChat },
@@ -272,7 +262,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
     if (isOnline) {
       set({ onlineChats: { ...currentChats, [activeChatId]: updatedChat } });
-      db.saveChat(updatedChat); // Chat now has content, sync to DB
+      db.saveChat(updatedChat);
     } else {
       set({ offlineChats: { ...currentChats, [activeChatId]: updatedChat } });
     }
@@ -295,7 +285,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
     if (isOnline) {
       set({ onlineChats: { ...currentChats, [id]: updatedChat } });
-      db.saveChat(updatedChat); // Chat now has evaluation data, sync to DB
+      db.saveChat(updatedChat);
     } else {
       set({ offlineChats: { ...currentChats, [id]: updatedChat } });
     }
