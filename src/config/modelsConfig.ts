@@ -15,7 +15,7 @@ export const BACKENDS: BackendService[] = [
   {
     id: "tejaswari-graph-rag",
     name: "Tejaswari Graph",
-    endpoint: "/v2/chat/tejaswari",
+    endpoint: "https://tejswari-grapgrag.hf.space/rag",
     provider: "Madiya Tejaswari",
   },
   {
