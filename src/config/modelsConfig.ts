@@ -10,7 +10,6 @@ export const BACKENDS: BackendService[] = [
     id: "pritam-graph-rag",
     name: "Pritam Graph",
     endpoint: "https://pge-spd-dev-neo4j-graph-db.hf.space/search",
-    // endpoint: "https://neo4j-graph-db.hf.space/search",
     provider: "Pritam Prabhu",
   },
   {
@@ -28,7 +27,7 @@ export const BACKENDS: BackendService[] = [
   {
     id: "suvam-vector-rag",
     name: "Suvam Vector",
-    endpoint: "/v2/chat/suvam",
+    endpoint: "https://pge-spd-dev-pge-vector-rag.hf.space/rag",
     provider: "Suvam Sharma",
   },
 ];
