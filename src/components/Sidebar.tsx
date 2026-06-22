@@ -53,27 +53,31 @@ export const Sidebar = () => {
             <h1 className="text-sm font-semibold text-slate-800 tracking-tight">Evaluations</h1>
           </div>
           
-          <div className="flex bg-slate-200 rounded-md p-0.5">
+          <div className="flex bg-slate-200/80 p-1 rounded-lg border border-slate-200/50 shadow-inner">
             <button
               onClick={() => setViewMode("tree")}
-              className={`p-1 rounded text-slate-500 transition-colors ${
-                viewMode === "tree" ? "bg-white shadow-sm text-blue-600" : "hover:text-slate-700"
+              className={`flex items-center justify-center p-1.5 w-7 h-7 rounded-md transition-all ${
+                viewMode === "tree" 
+                  ? "bg-white shadow-sm text-blue-600 ring-1 ring-slate-200/50" 
+                  : "text-slate-500 hover:text-slate-700 hover:bg-slate-300/50"
               }`}
-              title="Grouped View"
+              title="Grouped View (By Model)"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
               </svg>
             </button>
             <button
               onClick={() => setViewMode("list")}
-              className={`p-1 rounded text-slate-500 transition-colors ${
-                viewMode === "list" ? "bg-white shadow-sm text-blue-600" : "hover:text-slate-700"
+              className={`flex items-center justify-center p-1.5 w-7 h-7 rounded-md transition-all ${
+                viewMode === "list" 
+                  ? "bg-white shadow-sm text-blue-600 ring-1 ring-slate-200/50" 
+                  : "text-slate-500 hover:text-slate-700 hover:bg-slate-300/50"
               }`}
-              title="Recent View"
+              title="Recent View (Chronological)"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </button>
           </div>
