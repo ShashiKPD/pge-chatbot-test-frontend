@@ -42,6 +42,7 @@ export const TreeView = ({
     <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-1">
       {tree.map((backend) => {
         const isBackendExpanded = expanded[backend.id] !== false;
+        const activeModels = backend.models.filter(m => m.chats.length > 0);
 
         return (
           <div key={backend.id} className="flex flex-col">
@@ -69,8 +70,14 @@ export const TreeView = ({
               </span>
             </button>
 
+            {isBackendExpanded && activeModels.length === 0 && (
+              <div className="pl-8 py-1.5 text-[10px] text-slate-400 italic">
+                No active chats
+              </div>
+            )}
+
             {isBackendExpanded &&
-              backend.models.map((model) => {
+              activeModels.map((model) => {
                 const modelKey = `${backend.id}-${model.id}`;
                 const isModelExpanded = expanded[modelKey] !== false;
 
@@ -130,12 +137,6 @@ export const TreeView = ({
                         </svg>
                       </button>
                     </div>
-
-                    {isModelExpanded && model.chats.length === 0 && (
-                      <div className="pl-8 py-1.5 text-[10px] text-slate-400 italic">
-                        No active chats
-                      </div>
-                    )}
 
                     {isModelExpanded &&
                       model.chats.map((chat) => {
