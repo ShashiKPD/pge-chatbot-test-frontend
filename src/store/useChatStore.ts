@@ -19,7 +19,7 @@ export interface Chat {
   modelId: string;
   messages: Message[];
   createdAt: number;
-  score?: number | null; // Allow explicit nulls for database wiping
+  score?: number | null;
   evalNote?: string | null;
 }
 
@@ -50,7 +50,8 @@ interface ChatState {
 }
 
 const generateTitle = (text: string) => {
-  return text.length > 30 ? text.substring(0, 30) + "..." : text;
+  const singleLine = text.split("\n")[0].trim();
+  return singleLine.length > 100 ? singleLine.substring(0, 100) : singleLine;
 };
 
 export const useChatStore = create<ChatState>((set, get) => ({
@@ -314,7 +315,6 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
     const updatedChat = { ...currentChats[id] };
 
-    // Explicitly set null to send a NULL wipe command to Supabase
     if (score !== undefined) {
       updatedChat.score = score;
     }

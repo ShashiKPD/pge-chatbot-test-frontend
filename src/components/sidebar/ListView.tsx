@@ -21,7 +21,6 @@ export const ListView = ({ chats, activeChatId, setActiveChat, deleteChat, creat
   
   const filterRef = useRef<HTMLDivElement>(null);
 
-  // Handle outside click for filter popover
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (filterRef.current && !filterRef.current.contains(event.target as Node)) {
@@ -57,7 +56,6 @@ export const ListView = ({ chats, activeChatId, setActiveChat, deleteChat, creat
   const query = searchQuery.toLowerCase();
   const sortedChats = Object.values(chats).sort((a, b) => b.createdAt - a.createdAt);
 
-  // Filter and Score Results
   const filteredAndScoredChats = sortedChats.reduce((acc, chat) => {
     const matchesBackend = selectedBackends.length === 0 || selectedBackends.includes(chat.backendId);
     const matchesModel = selectedModels.length === 0 || selectedModels.includes(chat.modelId);
@@ -71,7 +69,6 @@ export const ListView = ({ chats, activeChatId, setActiveChat, deleteChat, creat
       exactTitleMatch = chat.title.toLowerCase().includes(query);
       promptMatch = !exactTitleMatch && chat.messages.some(m => m.role === "user" && m.text.toLowerCase().includes(query));
       
-      // Skip if it doesn't match the query
       if (!exactTitleMatch && !promptMatch) return acc;
     }
 
@@ -79,7 +76,6 @@ export const ListView = ({ chats, activeChatId, setActiveChat, deleteChat, creat
     return acc;
   }, [] as { chat: Chat, exactTitleMatch: boolean }[]);
 
-  // Sort by relevance if there is a query (Titles first, then prompts)
   if (query) {
     filteredAndScoredChats.sort((a, b) => {
       if (a.exactTitleMatch && !b.exactTitleMatch) return -1;
@@ -98,11 +94,9 @@ export const ListView = ({ chats, activeChatId, setActiveChat, deleteChat, creat
   return (
     <div className="flex flex-col h-full w-full min-w-0">
       
-      {/* Control Bar (Separated from the scrolling list so the popup isn't trapped) */}
       <div className="p-3 pb-1 flex flex-col gap-2 shrink-0 z-10 border-b border-transparent">
         <div className="flex items-center gap-2 w-full">
           
-          {/* Permanent Search Bar */}
           <div className="flex flex-1 items-center bg-white border border-slate-200 rounded-lg shadow-sm h-8 px-2 min-w-0 transition-colors focus-within:border-blue-400 focus-within:ring-1 focus-within:ring-blue-400 focus-within:ring-opacity-50">
             <svg className="w-3.5 h-3.5 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -126,7 +120,6 @@ export const ListView = ({ chats, activeChatId, setActiveChat, deleteChat, creat
             )}
           </div>
 
-          {/* Filter Popover */}
           <div className="relative shrink-0" ref={filterRef}>
             <button
               onClick={() => setIsFilterOpen(!isFilterOpen)}
@@ -153,7 +146,7 @@ export const ListView = ({ chats, activeChatId, setActiveChat, deleteChat, creat
                         onClick={() => toggleBackend(b.id)}
                         className={`px-2.5 py-1 text-[11px] font-bold rounded-full border transition-colors ${
                           selectedBackends.includes(b.id) 
-                            ? "bg-blue-600 border-blue-600 text-white" 
+                            ? "bg-blue-500 border-blue-500 text-white" 
                             : "bg-slate-50 border-slate-200 text-slate-600 hover:border-slate-300"
                         }`}
                       >
@@ -172,7 +165,7 @@ export const ListView = ({ chats, activeChatId, setActiveChat, deleteChat, creat
                         onClick={() => toggleModel(m.id)}
                         className={`px-2.5 py-1 text-[11px] font-bold rounded-full border transition-colors text-left ${
                           selectedModels.includes(m.id) 
-                            ? "bg-blue-600 border-blue-600 text-white" 
+                            ? "bg-blue-500 border-blue-500 text-white" 
                             : "bg-slate-50 border-slate-200 text-slate-600 hover:border-slate-300"
                         }`}
                       >
@@ -206,7 +199,6 @@ export const ListView = ({ chats, activeChatId, setActiveChat, deleteChat, creat
         </button>
       </div>
 
-      {/* Scrolling Chat List */}
       <div className="flex-1 overflow-y-auto px-3 pb-3 flex flex-col gap-2 min-w-0 relative">
         {finalFilteredChats.length === 0 && (
           <div className="text-center text-xs text-slate-400 mt-4 italic px-2">
@@ -227,9 +219,9 @@ export const ListView = ({ chats, activeChatId, setActiveChat, deleteChat, creat
                   : "bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50"
               }`}
             >
-              <div className="flex justify-between items-start gap-2 mb-0.5 min-w-0">
+              <div className="flex items-start gap-2 mb-0.5 w-full min-w-0">
                 <span
-                  className={`text-sm font-medium truncate ${
+                  className={`flex-1 min-w-0 text-sm font-medium truncate ${
                     isActive ? "text-blue-800" : "text-slate-700"
                   }`}
                   title={chat.title}
@@ -251,7 +243,7 @@ export const ListView = ({ chats, activeChatId, setActiveChat, deleteChat, creat
                 )}
               </div>
               
-              <div className="flex justify-between items-center text-[10px] text-slate-400 pr-5 min-w-0">
+              <div className="flex justify-between items-center text-[10px] text-slate-400 pr-5 min-w-0 w-full">
                 <div className="flex items-center gap-1.5 overflow-hidden min-w-0">
                   <span className={`font-bold truncate shrink-0 ${isActive ? "text-blue-700" : "text-slate-600"}`}>
                     {getBackendName(chat.backendId)}

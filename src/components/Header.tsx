@@ -71,18 +71,45 @@ const EvaluationPopover = ({ activeChat }: { activeChat: Chat }) => {
   const { updateEvaluation } = useChatStore();
   const [isOpen, setIsOpen] = useState(false);
   const [evalNote, setEvalNote] = useState(activeChat.evalNote || "");
+  
   const popoverRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  
+  // Refs to hold the latest state for the click-outside/unmount listener without stale closures
+  const evalNoteRef = useRef(evalNote);
+  const activeChatRef = useRef(activeChat);
 
+  useEffect(() => {
+    evalNoteRef.current = evalNote;
+  }, [evalNote]);
+
+  useEffect(() => {
+    activeChatRef.current = activeChat;
+  }, [activeChat]);
+
+  // Sync state ONLY when switching to a DIFFERENT chat.
+  // Removing `activeChat.evalNote` from dependencies stops it from closing after saving.
   useEffect(() => {
     setEvalNote(activeChat.evalNote || "");
     setIsOpen(false);
-  }, [activeChat.id, activeChat.evalNote]);
+  }, [activeChat.id]);
 
+  const handleClose = () => {
+    const currentNote = evalNoteRef.current;
+    const savedNote = activeChatRef.current.evalNote || "";
+
+    // Only fire the save API if the note has actually changed
+    if (currentNote !== savedNote) {
+      updateEvaluation(activeChatRef.current.id, activeChatRef.current.score, currentNote);
+    }
+    setIsOpen(false);
+  };
+
+  // Handle clicking outside to close and conditionally save
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (popoverRef.current && !popoverRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
+        handleClose();
       }
     };
     if (isOpen) {
@@ -91,6 +118,7 @@ const EvaluationPopover = ({ activeChat }: { activeChat: Chat }) => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isOpen]);
 
+  // Auto-resize textarea
   useEffect(() => {
     if (textareaRef.current && isOpen) {
       textareaRef.current.style.height = "auto";
@@ -99,13 +127,9 @@ const EvaluationPopover = ({ activeChat }: { activeChat: Chat }) => {
   }, [evalNote, isOpen]);
 
   const handleScoreSelect = (num: number) => {
-    // If the clicked score is already the active score, pass null to clear it
     const newScore = activeChat.score === num ? null : num;
-    updateEvaluation(activeChat.id, newScore, evalNote);
-  };
-
-  const handleEvalNoteBlur = () => {
-    updateEvaluation(activeChat.id, activeChat.score, evalNote);
+    // Save score immediately
+    updateEvaluation(activeChat.id, newScore, evalNoteRef.current);
   };
 
   const scores = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
@@ -143,7 +167,7 @@ const EvaluationPopover = ({ activeChat }: { activeChat: Chat }) => {
           <div className="flex items-center justify-between">
             <span className="text-sm font-bold text-slate-700">Evaluate Response</span>
             <button
-              onClick={() => setIsOpen(false)}
+              onClick={handleClose}
               className="p-1 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-md transition-colors"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -177,9 +201,8 @@ const EvaluationPopover = ({ activeChat }: { activeChat: Chat }) => {
               ref={textareaRef}
               value={evalNote}
               onChange={(e) => setEvalNote(e.target.value)}
-              onBlur={handleEvalNoteBlur}
               placeholder="Add feedback about accuracy, tone, or missing details..."
-              className="w-full min-h-[80px] p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all resize-none overflow-hidden"
+              className="w-full min-h-[80px] p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:bg-white transition-all resize-none overflow-hidden"
               rows={2}
             />
           </div>
