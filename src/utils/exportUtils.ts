@@ -18,7 +18,7 @@ export const exportChatsToCSV = (
     "Conversation History",
   ];
 
-  const escapeCSV = (str: string | number | undefined) => {
+  const escapeCSV = (str: string | number | undefined | null) => {
     if (str === undefined || str === null) return "";
     const stringified = String(str);
     if (

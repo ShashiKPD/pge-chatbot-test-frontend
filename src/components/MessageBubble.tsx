@@ -1,4 +1,5 @@
 import type { Message } from "../store/useChatStore";
+import { MarkdownRenderer } from "./MarkdownRenderer";
 
 export const MessageBubble = ({ message }: { message: Message }) => {
   const isUser = message.role === "user";
@@ -58,13 +59,13 @@ export const MessageBubble = ({ message }: { message: Message }) => {
           </div>
 
           <div
-            className={`px-5 py-3.5 text-sm leading-relaxed shadow-sm flex flex-col gap-4 ${
+            className={`px-5 py-3.5 text-sm shadow-sm flex flex-col gap-4 ${
               isUser
                 ? "bg-blue-600 text-white rounded-2xl rounded-tr-sm"
                 : "bg-white border border-slate-200 text-slate-800 rounded-2xl rounded-tl-sm"
             }`}
           >
-            <div className="whitespace-pre-wrap break-words">{messageText}</div>
+            <MarkdownRenderer content={messageText} isUser={isUser} />
 
             {message.images && message.images.length > 0 && (
               <div className="flex flex-col gap-2">

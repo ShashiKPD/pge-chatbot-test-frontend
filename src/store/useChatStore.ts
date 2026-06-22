@@ -19,8 +19,8 @@ export interface Chat {
   modelId: string;
   messages: Message[];
   createdAt: number;
-  score?: number;
-  evalNote?: string;
+  score?: number | null; // Allow explicit nulls for database wiping
+  evalNote?: string | null;
 }
 
 interface ChatState {
@@ -42,7 +42,11 @@ interface ChatState {
   updateActiveConfig: (backendId: string, modelId: string) => void;
   addMessage: (message: Omit<Message, "id" | "timestamp">) => void;
   setLoading: (loading: boolean) => void;
-  updateEvaluation: (id: string, score?: number, evalNote?: string) => void;
+  updateEvaluation: (
+    id: string,
+    score?: number | null,
+    evalNote?: string,
+  ) => void;
 }
 
 const generateTitle = (text: string) => {
@@ -229,8 +233,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
     const isUntouched =
       activeChat.messages.length === 0 &&
-      activeChat.score === undefined &&
-      activeChat.evalNote === undefined;
+      (activeChat.score === undefined || activeChat.score === null) &&
+      (activeChat.evalNote === undefined || activeChat.evalNote === "");
 
     if (isUntouched) {
       const updatedChat = { ...activeChat, backendId, modelId };
@@ -308,11 +312,16 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
     if (!currentChats[id]) return;
 
-    const updatedChat = {
-      ...currentChats[id],
-      ...(score !== undefined && { score }),
-      ...(evalNote !== undefined && { evalNote }),
-    };
+    const updatedChat = { ...currentChats[id] };
+
+    // Explicitly set null to send a NULL wipe command to Supabase
+    if (score !== undefined) {
+      updatedChat.score = score;
+    }
+
+    if (evalNote !== undefined) {
+      updatedChat.evalNote = evalNote;
+    }
 
     if (isOnline) {
       set({ onlineChats: { ...currentChats, [id]: updatedChat } });
