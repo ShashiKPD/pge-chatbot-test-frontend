@@ -30,6 +30,10 @@ interface ChatState {
   activeOnlineChatId: string | null;
   isLoading: boolean;
   isOnline: boolean;
+  viewMode: "tree" | "list";
+  defaultBackendId: string;
+  defaultModelId: string;
+  setViewMode: (mode: "tree" | "list") => void;
   initializeStore: () => Promise<void>;
   setOnlineMode: (online: boolean) => Promise<void>;
   createChat: (backendId?: string, modelId?: string) => void;
@@ -51,13 +55,24 @@ export const useChatStore = create<ChatState>((set, get) => ({
   activeOfflineChatId: null,
   activeOnlineChatId: null,
   isLoading: false,
-  isOnline: false,
+  isOnline: true,
+  viewMode: (localStorage.getItem("viewMode") as "tree" | "list") || "list",
+  defaultBackendId: localStorage.getItem("defaultBackendId") || BACKENDS[0].id,
+  defaultModelId: localStorage.getItem("defaultModelId") || GROQ_MODELS[0].id,
+
+  setViewMode: (mode) => {
+    set({ viewMode: mode });
+    localStorage.setItem("viewMode", mode);
+  },
 
   initializeStore: async () => {
-    const savedMode = localStorage.getItem("isOnlineMode") === "true";
-    if (savedMode) {
+    const savedMode = localStorage.getItem("isOnlineMode");
+    const initOnline = savedMode === null ? true : savedMode === "true";
+
+    if (initOnline) {
       await get().setOnlineMode(true);
     } else {
+      set({ isOnline: false });
       const state = get();
       const offlineIds = Object.keys(state.offlineChats).sort(
         (a, b) =>
@@ -112,8 +127,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
   createChat: (bId, mId) => {
     const state = get();
-    const backendId = bId || BACKENDS[0].id;
-    const modelId = mId || GROQ_MODELS[0].id;
+    const backendId = bId || state.defaultBackendId;
+    const modelId = mId || state.defaultModelId;
     const newId = crypto.randomUUID();
 
     const newChat: Chat = {
@@ -139,7 +154,18 @@ export const useChatStore = create<ChatState>((set, get) => ({
   },
 
   setActiveChat: (id) => {
-    if (get().isOnline) {
+    const state = get();
+    const chat = state.isOnline
+      ? state.onlineChats[id]
+      : state.offlineChats[id];
+
+    if (chat) {
+      set({ defaultBackendId: chat.backendId, defaultModelId: chat.modelId });
+      localStorage.setItem("defaultBackendId", chat.backendId);
+      localStorage.setItem("defaultModelId", chat.modelId);
+    }
+
+    if (state.isOnline) {
       set({ activeOnlineChatId: id });
     } else {
       set({ activeOfflineChatId: id });
@@ -186,6 +212,11 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
   updateActiveConfig: (backendId, modelId) => {
     const state = get();
+
+    set({ defaultBackendId: backendId, defaultModelId: modelId });
+    localStorage.setItem("defaultBackendId", backendId);
+    localStorage.setItem("defaultModelId", modelId);
+
     const isOnline = state.isOnline;
     const currentChats = isOnline ? state.onlineChats : state.offlineChats;
     const activeChatId = isOnline
